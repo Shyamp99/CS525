@@ -5,12 +5,13 @@ import plotly.graph_objects as go
 import math
 
 class neuron:
-    def __init__(self, time = 100, step = 2):
+    def __init__(self, time = 100, step = .5):
         #all time units are milliseconds
         self.time = time
         self.step = step
-        #so simulate, i value in this arr is considered to be 1 step
-        #so like element 0 is t = 1 and element n is t = n*step
+
+        # so simulate, i value in this arr is considered to be 1 step
+        # so like element 0 is t = 1 and element n is t = n*step
         self.time_arr = np.arange(0, time+1, step)
         # membrane potential for a given time: it has 1:1 correspondence with time_arr
         self.vm = np.zeros(int(time/step)+1)
@@ -28,7 +29,6 @@ class neuron:
             title = "Leaky Integrate-and-Fire",
             xaxis_title="Time (ms)",
             yaxis_title="Voltage (mv)"
-
         )
         fig.show()
         
@@ -45,25 +45,29 @@ class lif:
         self.vt = vt
         self.vr = vr
     
-    def current_voltage(self, input, step):
-        #for dv i'm not sure if that's the change in voltage from the last step
-        #so (curr_voltage-last_step_voltage) or some other shit like step*curr_voltage
-
-        return self.rm*input - self.tau*input*step
+    def current_voltage(self, input, step, i):
+        # we are just solving for dv here
+        # return self.rm*input - self.tau*input*step
+        # print(((-self.neuron.vm[i-1] + input*self.rm) / self.tau)*step)
+        return ((-self.neuron.vm[i-1] + input*self.rm) / self.tau)
 
     # flip is the time when we want to up voltage: refers to index in time_arr
-    def simulate(self, flip):
+    def simulate(self, flip, flip_end):
         step = self.neuron.step
         for i in range(1, len(self.neuron.vm)):
             if i < flip:
-                mp = self.neuron.vm[i-1]+self.current_voltage(self.input1, step)
+                mp = self.neuron.vm[i-1]+self.current_voltage(self.input1, step, i)
                 self.neuron.v[i] = self.input1
-            else:
-                mp = self.neuron.vm[i-1]+self.current_voltage(self.input2, step)
+            elif (i>=flip and i <= flip_end):
+                mp = self.neuron.vm[i-1]+self.current_voltage(self.input2, step, i)
                 self.neuron.v[i] = self.input2
+            elif i > flip_end:
+                mp = self.neuron.vm[i-1]+self.current_voltage(self.vr, step, i)
+                self.neuron.v[i] = self.vr
             if mp >= self.vt:
                 self.neuron.spikes[i] = 1
                 self.neuron.vm[i] = self.vr
             else:
                  self.neuron.vm[i] = mp
+            
 
