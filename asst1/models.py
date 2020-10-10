@@ -69,4 +69,41 @@ class lif:
                 self.neuron.spikes[i] = 1
             self.neuron.vm[i] = mp
             
+class izhikevich:
+    # v is membrane potential (usually +30 mv), vt is threshold, u is membrane recovery variable (i think it's initially v*b but not sure)
+    # a = time scale of recovery var u - smaller - slower recovery, typically 0.02
+    # b = sensitivity of recovery var u - greater  results in "Greater values couple and more strongly resulting in possible subthreshold oscillations and low-threshold spiking dynamics
+    # c = reset membrane potential - usually -65 mv
+    # d = after spike reset of u (represents slow high threshold NA+ and K+ conductance) - usually 2
+    def __init__(self, a = 0.2, b=0.2, c = -65, d = 2, vt = 30):
+        self.neuron = neuron()
+        self.vt = vt
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+        self.u = c*b
+        self.neuron.vm[0] = c
 
+    def get_du(self, v):
+        return self.a*(self.b*v-self.u)
+
+    def simulate(self, input_v):
+        reset = False
+        for i in range(1, len(self.neuron.vm)):
+            #I'm not sure if this is correct, i need to check
+            if reset:
+                self.neuron.vm[i] = self.c
+                #this one i'm not sure if we use the voltrage from the last spike or the reset voltage
+                self.u = self.a*(self.b*self.neuron.vm[i-1]-self.u)
+                continue
+
+            curr_v = 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u + input_v
+            self.u = self.a*(self.b*self.neuron.vm[i-1]-self.u)
+            if curr_v >= 30:
+                reset = True
+                self.u += self.d
+                self.neuron.spikes[i] = 30
+            self.neuron.vm[i] = curr_v
+
+            
