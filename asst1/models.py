@@ -45,29 +45,28 @@ class lif:
         self.vt = vt
         self.vr = vr
     
-    def current_voltage(self, input, step, i):
+    def current_voltage(self, input, step, prev):
         # we are just solving for dv here
         # return self.rm*input - self.tau*input*step
         # print(((-self.neuron.vm[i-1] + input*self.rm) / self.tau)*step)
-        return ((-self.neuron.vm[i-1] + input*self.rm) / self.tau)
+        return ((-prev + input*self.rm) / self.tau)
 
     # flip is the time when we want to up voltage: refers to index in time_arr
     def simulate(self, flip, flip_end):
         step = self.neuron.step
         for i in range(1, len(self.neuron.vm)):
+            prev = self.neuron.vm[i-1] if self.neuron.vm[i-1]<self.vt else self.vr
             if i < flip:
-                mp = self.neuron.vm[i-1]+self.current_voltage(self.input1, step, i)
+                mp = prev+self.current_voltage(self.input1, step, prev)
                 self.neuron.v[i] = self.input1
             elif (i>=flip and i <= flip_end):
-                mp = self.neuron.vm[i-1]+self.current_voltage(self.input2, step, i)
+                mp = prev+self.current_voltage(self.input2, step, prev)
                 self.neuron.v[i] = self.input2
             elif i > flip_end:
-                mp = self.neuron.vm[i-1]+self.current_voltage(self.vr, step, i)
+                mp = prev+self.current_voltage(self.vr, step, prev)
                 self.neuron.v[i] = self.vr
             if mp >= self.vt:
                 self.neuron.spikes[i] = 1
-                self.neuron.vm[i] = self.vr
-            else:
-                 self.neuron.vm[i] = mp
+            self.neuron.vm[i] = mp
             
 
