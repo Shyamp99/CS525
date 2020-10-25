@@ -92,6 +92,7 @@ class izhikevich:
         return self.a*(self.b*v-self.u)
 
     #What i'm missing is how dv and du play together
+    #i'm p sure my logic is sound for this but check it over
     def simulate(self, input_v):
         reset = False
         for i in range(1, len(self.neuron.vm)):
