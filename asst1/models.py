@@ -101,12 +101,13 @@ class izhikevich:
                 self.neuron.vm[i] = self.c
                 #this one i'm not sure if we use the voltrage from the last spike or the reset voltage
                 #i'm p sure it's that you use v = c
-                self.u = self.a*(self.b*self.neuron.vm[i]-self.u)
+                # self.u = self.a*(self.b*self.neuron.vm[i]-self.u)
                 #it equals 30 because when we plot the neuron voltage will be 30 at spike and we want the spike lineplot to match
-                self.neuron.spikes[i] = 30
+                # self.neuron.spikes[i] = 30
+                reset = False
                 continue
 
-            curr_v = 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u + input_v
+            curr_v = 0.5*( 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u + input_v)
             self.u = self.a*(self.b*self.neuron.vm[i-1]-self.u)
             # once neuron hits 30 we spike and then set v to c, u+=d
             if curr_v >= 30:
