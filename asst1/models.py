@@ -14,7 +14,7 @@ class neuron:
         # so like element 0 is t = 0 and element n is t = n*step
         self.time_arr = np.arange(0, time+1, step)
         # membrane potential for a given time: it has 1:1 correspondence with time_arr
-        self.vm = np.zeros(int(time/step)+1)
+        self.vm = None
         # tells us when spikes via a 1
         self.spikes = np.zeros(int(time/step)+1)
         # just an array to keep track of our voltages to make it easier to plot
@@ -39,6 +39,7 @@ class lif:
     # vt is our threshold voltage and vr is our reset voltage
     def __init__(self, rm, cm, input1 = .2, input2 = .5, vt=1, vr = 0):
         self.neuron = neuron()
+        self.neuron.vm = np.zeros(int(self.neuron.time/self.neuron.step)+1)
         self.rm = rm
         self.cm = cm
         self.tau = rm*cm
@@ -80,6 +81,7 @@ class izhikevich:
     # d = after spike reset of u (represents slow high threshold NA+ and K+ conductance) - usually 2
     def __init__(self, a = 0.02, b = 0.2, c = -65, d = 2, vt = 30):
         self.neuron = neuron()
+        self.neuron.vm = -65*np.ones(int(self.neuron.time/self.neuron.step)+1)
         self.vt = vt
         self.a = a
         self.b = b
@@ -107,13 +109,14 @@ class izhikevich:
                 reset = False
                 continue
 
-            curr_v = 0.5*( 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u + input_v)
-            self.u = self.a*(self.b*self.neuron.vm[i-1]-self.u)
+            curr_v = self.neuron.step*( 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u + input_v)
+            self.u += self.a*(self.b*curr_v-self.u)
             # once neuron hits 30 we spike and then set v to c, u+=d
             if curr_v >= 30:
                 reset = True
                 self.u += self.d
                 self.neuron.spikes[i] = 30
+                self.neuron.vm[i] = 30
             self.neuron.vm[i] = curr_v
 
             
