@@ -27,7 +27,7 @@ class neuron:
         vt_line = self.vt*np.ones(int(self.time/self.step)+1)
         fig = go.Figure()
         if mode:
-            fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold', line=dict(color="blue", dash='dot')))
+            fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold (mv)', line=dict(color="blue", dash='dot')))
         fig.add_trace(go.Scatter(x=self.time_arr, y=self.vm, mode='lines', name='Membrane Potential (mv)'))
         fig.add_trace(go.Scatter(x=self.time_arr, y=self.a, mode='lines', name='Input Current (a)'))
         fig.update_layout(
