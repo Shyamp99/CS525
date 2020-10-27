@@ -3,6 +3,7 @@ import plotly as pt
 import plotly.graph_objects as go
 # import matplotlib as plt
 import math
+from scipy.integrate import odeint
 
 class neuron:
     def __init__(self, vt, time = 100, step = .5):
@@ -135,6 +136,9 @@ class hodgkinhuxley:
     v_Na = -115
     v_K = 12
     v_L = -10.613
+    #v_Na = 50.0
+    #v_K = -77
+    #v_L = -54.387
     
     # Conductances for each ion
     g_Na = 120
@@ -142,12 +146,15 @@ class hodgkinhuxley:
     g_L = 0.3
     
     
-    def __init__(self, vt=6):
-        self.neuron = neuron(vt=vt)
-        
+    def __init__(self, vt=6, t=100, step=.5):
+        self.neuron = neuron(vt=vt, time=t, step=step)
+        self.neuron.vm = np.zeros(int(self.neuron.time/self.neuron.step)+1)
+        print(self.neuron.time_arr)
         
     def simulate(self):
-        pass
+        X = odeint( self.dvdt, [-65, 0.05, 0.6, 0.32], self.neuron.time_arr,args=(self,),mxstep=500 )
+        self.neuron.vm = X[:,0]
+        return X
     
     
     """
@@ -187,16 +194,19 @@ class hodgkinhuxley:
     Returning the input current based on time
     """
     def I_in(self, t):
-        if t > 4:
+        """
+        if t > 75:
             return 0
-        elif t > 3:
+        elif t > 55:
             return 35
-        elif t > 2:
+        elif t > 35:
             return 0
-        elif t > 1:
+        elif t > 15:
             return 10
         else:
             return 0
+       """
+        return 10*(t>100) - 10*(t>200) + 35*(t>300) - 35*(t>400)
     """
     Calculate the leaking current
     """
@@ -216,7 +226,10 @@ class hodgkinhuxley:
     Calculate dv/dt at the given time
     """
     @staticmethod
-    def dvdt(self, X, t):
+    def dvdt(X, t, self):
         V, m, h, n = X
-        dVdt = (self.I_inj(t) - self.I_Na(V, m, h) - self.I_K(V, n) - self.I_L(V)) / self.C_m
-        return dVdt
+        dVdt = (self.I_in(t) - self.I_Na(V, m, h) - self.I_K(V, n) - self.I_leak(V)) / self.c_m
+        dmdt = self.a_m(V)*(1.0-m) - self.b_m(V)*m
+        dhdt = self.a_h(V)*(1.0-h) - self.b_h(V)*h
+        dndt = self.a_n(V)*(1.0-n) - self.b_n(V)*n
+        return dVdt, dmdt, dhdt, dndt
