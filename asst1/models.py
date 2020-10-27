@@ -31,7 +31,7 @@ class neuron:
         if mode:
             fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold', line=dict(color="blue", dash='dot')))
         fig.add_trace(go.Scatter(x=self.time_arr, y=self.vm, mode='lines', name='Membrane Potential'))
-        fig.add_trace(go.Scatter(x=self.time_arr, y=self.v, mode='lines', name='Input Voltage'))
+        fig.add_trace(go.Scatter(x=self.time_arr, y=self.a, mode='lines', name='Input Voltage'))
         fig.update_layout(
             title = title,
             xaxis_title="Time (ms)",
