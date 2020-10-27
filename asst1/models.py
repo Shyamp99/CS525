@@ -5,11 +5,12 @@ import plotly.graph_objects as go
 import math
 
 class neuron:
-    def __init__(self, time = 100, step = .5):
+    def __init__(self, vt, time = 100, step = .5):
         #all time units are milliseconds
         self.time = time
         self.step = step
-
+        #our spike threshold
+        self.vt = vt
         # so simulate, i value in this arr is considered to be 1 step
         # so like element 0 is t = 0 and element n is t = n*step
         self.time_arr = np.arange(0, time+1, step)
@@ -20,15 +21,17 @@ class neuron:
         # just an array to keep track of our voltages to make it easier to plot
         self.v = np.zeros(int(time/step)+1)
         
+        
 
     #using plotly to make the graph cuz it's so much fucking better than matplotlib
-    def plot_graph(self):
+    def plot_graph(self, title):
+        vt_line = self.vt*np.ones(int(self.time/self.step)+1)
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=self.time_arr, y=self.spikes, mode='lines', name='Spike'))
+        fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold', line=dict(color="blue", dash='dot')))
         fig.add_trace(go.Scatter(x=self.time_arr, y=self.vm, mode='lines', name='Membrane Potential'))
         fig.add_trace(go.Scatter(x=self.time_arr, y=self.v, mode='lines', name='Input Voltage'))
         fig.update_layout(
-            title = "Leaky Integrate-and-Fire",
+            title = title,
             xaxis_title="Time (ms)",
             yaxis_title="Voltage (mv)"
         )
@@ -38,7 +41,7 @@ class lif:
     # rm = resitence, cm = capcitence, input 1 and 2 are our input voltages
     # vt is our threshold voltage and vr is our reset voltage
     def __init__(self, rm, cm, input1 = .2, input2 = .5, vt=1, vr = 0):
-        self.neuron = neuron()
+        self.neuron = neuron(vt = vt)
         self.neuron.vm = np.zeros(int(self.neuron.time/self.neuron.step)+1)
         self.rm = rm
         self.cm = cm
@@ -78,45 +81,52 @@ class izhikevich:
     # a = time scale of recovery var u - smaller - slower recovery, typically 0.02
     # b = sensitivity of recovery var u - greater  results in "Greater values couple and more strongly resulting in possible subthreshold oscillations and low-threshold spiking dynamics
     # c = reset membrane potential - usually -65 mv
-    # d = after spike reset of u (represents slow high threshold NA+ and K+ conductance) - usually 2
-    def __init__(self, a = 0.02, b = 0.2, c = -65, d = 2, vt = 30):
-        self.neuron = neuron()
+    # d = after spike reset of u (represents slow high threshold NA+ and K+ conductance) - usually 8 in regular spiking
+    def __init__(self, a = 0.02, b = 0.2, c = -65, d = 8, vt = 30):
+        self.neuron = neuron(vt = vt, time = 500)
         self.neuron.vm = -65*np.ones(int(self.neuron.time/self.neuron.step)+1)
         self.vt = vt
         self.a = a
         self.b = b
         self.c = c
         self.d = d
-        self.u = c*b
+        self.u = np.zeros(int(self.neuron.time/self.neuron.step)+1)
+        self.u[0] = self.b*c
         self.neuron.vm[0] = c
-
-    def get_du(self, v):
-        return self.a*(self.b*v-self.u)
 
     #What i'm missing is how dv and du play together
     #i'm p sure my logic is sound for this but check it over
-    def simulate(self, input_v):
+    def simulate(self, input_v, input_v2, flip, flip_end):
+        k = 0
+        inputs = (input_v, input_v2, 0)
         reset = False
+        temp = 0
+        # get_mp = lambda i: self.neuron.vm[i-1]+self.neuron.step*( 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u[i-1] + inputs[k])
+        # get_u = lambda i: self.u[i-1]+self.neuron.step*(self.a*(self.b*curr_v-self.u[i-1]))
         for i in range(1, len(self.neuron.vm)):
-            #I'm not sure if this is correct, i need to check
-            if reset:
-                self.neuron.vm[i] = self.c
-                #this one i'm not sure if we use the voltrage from the last spike or the reset voltage
-                #i'm p sure it's that you use v = c
-                # self.u = self.a*(self.b*self.neuron.vm[i]-self.u)
-                #it equals 30 because when we plot the neuron voltage will be 30 at spike and we want the spike lineplot to match
-                # self.neuron.spikes[i] = 30
-                reset = False
-                continue
-
-            curr_v = self.neuron.step*( 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u + input_v)
-            self.u += self.a*(self.b*curr_v-self.u)
+            # print(inputs[k])
+            if i == flip:
+                k = 1
+            elif i == flip_end:
+                k =2
+            curr_v = self.neuron.vm[i-1]+self.neuron.step*( 0.04*self.neuron.vm[i-1]**2 + 5*self.neuron.vm[i-1] + 140 - self.u[i-1] + inputs[k])
+            # print(curr_v)
+            self.u[i] = self.u[i-1]+(self.a*(self.b*curr_v-self.u[i-1]))
             # once neuron hits 30 we spike and then set v to c, u+=d
-            if curr_v >= 30:
+            if reset:
+                self.neuron.vm[i-1] = temp
+                reset = False
+            if curr_v > self.vt:
+                temp = curr_v
+                self.neuron.vm[i] = self.c
+                # print(self.c)
+                self.u[i] += self.d
+                #30 is a placeholder i'll adjust the value according tothe final graph
+                self.neuron.spikes[i] = self.vt
+                self.neuron.v[i] = inputs[k]
                 reset = True
-                self.u += self.d
-                self.neuron.spikes[i] = 30
-                self.neuron.vm[i] = 30
+                continue
             self.neuron.vm[i] = curr_v
+            self.neuron.v[i] = inputs[k]
 
             
