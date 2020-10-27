@@ -129,4 +129,83 @@ class izhikevich:
             self.neuron.vm[i] = curr_v
             self.neuron.v[i] = inputs[k]
 
-            
+class hodgkinhuxley:
+    
+    """
+    Constants
+    """
+    # capacitance of membrance
+    c_m = 1.0
+    
+    # Equilibrium potentials for each ion
+    v_Na = -115
+    v_K = 12
+    v_L = -10.613
+    
+    # Conductances for each ion
+    g_Na = 120
+    g_K = 36
+    g_L = 0.3
+    
+    
+    def __init__(self, vt=6):
+        self.neuron = neuron(vt=vt)
+        
+        
+    def simulate(self):
+        pass
+    
+    
+    """
+    Calculating rate of gates opening in Potassium channels
+    """
+    def a_n(self, V):
+        return 0.01 * ( ( 10 - V ) / ( np.exp( (10 - V) / 10 ) - 1 ) )
+    """
+    Calculating rate of gates closing in Potassium channels
+    """
+    def b_n(self, V):
+        return 0.125 * ( np.exp( (-1) * V / 80 )  )
+    
+    """
+    Calculating rate of the fast gates opening in Sodium channels
+    """
+    def a_m(self, V):
+        return 0.1 * ( ( 25 - V ) / ( np.exp( ( 25 - V ) / 10 ) - 1 ) )
+    """
+    Calculating rate of the fast gates closing in Sodium channels
+    """
+    def b_m(self, V):
+        return 4 * ( np.exp(  (-1) * V / 18  ) )
+    
+    """
+    Calculating rate of the slow gates opening in Sodium Channels
+    """
+    def a_h(self, V):
+        return 0.07 * ( np.exp( (-1) * V / 20 ) )
+    """
+    Calculating rate of the slow gates closing in Sodium Channels
+    """
+    def b_h(self, V):
+        return 1 / ( np.exp( ( 30 - V ) / 10 ) + 1 )
+    
+    """
+    Returning the input current based on time
+    """
+    def I_in(self, t):
+        pass
+    """
+    Calculate the leaking current
+    """
+    def I_leak(self, V):
+        pass
+    """
+    Calcuate the sodium current
+    """
+    def I_Na(self, m, h, V):
+        pass
+    """
+    Calculate the potassium current
+    """
+    def I_K(self, n, V):
+        pass
