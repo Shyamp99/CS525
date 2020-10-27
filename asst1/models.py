@@ -24,10 +24,12 @@ class neuron:
         
 
     #using plotly to make the graph cuz it's so much fucking better than matplotlib
-    def plot_graph(self, title):
+    #if mode is 0 we are plotting hodkins huxley and don't need a spike threshold line
+    def plot_graph(self, title, mode = 1):
         vt_line = self.vt*np.ones(int(self.time/self.step)+1)
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold', line=dict(color="blue", dash='dot')))
+        if mode:
+            fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold', line=dict(color="blue", dash='dot')))
         fig.add_trace(go.Scatter(x=self.time_arr, y=self.vm, mode='lines', name='Membrane Potential'))
         fig.add_trace(go.Scatter(x=self.time_arr, y=self.v, mode='lines', name='Input Voltage'))
         fig.update_layout(
