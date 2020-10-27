@@ -28,9 +28,9 @@ class neuron:
         vt_line = self.vt*np.ones(int(self.time/self.step)+1)
         fig = go.Figure()
         if mode:
-            fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold (mv)', line=dict(color="blue", dash='dot')))
-        fig.add_trace(go.Scatter(x=self.time_arr, y=self.vm, mode='lines', name='Membrane Potential (mv)'))
-        fig.add_trace(go.Scatter(x=self.time_arr, y=self.a, mode='lines', name='Input Current (a)'))
+            fig.add_trace(go.Scatter(x=self.time_arr, y=vt_line, mode='lines', name='Spike Threshold (mV)', line=dict(color="blue", dash='dot')))
+        fig.add_trace(go.Scatter(x=self.time_arr, y=self.vm, mode='lines', name='Membrane Potential (mV)'))
+        fig.add_trace(go.Scatter(x=self.time_arr, y=self.a, mode='lines', name='Input Current (mAmps)'))
         fig.update_layout(
             title = title,
             xaxis_title="Time (ms)",
@@ -133,8 +133,8 @@ class hodgkinhuxley:
     c_m = 1.0
     
     # Equilibrium potentials for each ion
-    v_Na = -115
-    v_K = 12
+    v_Na = 115
+    v_K = -12
     v_L = -10.613
     #v_Na = 50.0
     #v_K = -77
@@ -145,18 +145,44 @@ class hodgkinhuxley:
     g_K = 36
     g_L = 0.3
     
-    
-    def __init__(self, vt=6, t=100, step=.5):
+    """
+    Initializes the model by creating a neuron and filling in some instance variables
+    """
+    def __init__(self, vt=6, t=100, step=.5, initial_V=-65, initial_m=0.05, initial_h=0.6, initial_n=.32):
+        self.initial_V = initial_V
+        self.initial_m = initial_m
+        self.initial_h = initial_h
+        self.initial_n = initial_n
         self.neuron = neuron(vt=vt, time=t, step=step)
         self.neuron.vm = np.zeros(int(self.neuron.time/self.neuron.step)+1)
-        print(self.neuron.time_arr)
         
+    """
+    Integrates the derivatives in order to find the membrane potential
+    """
     def simulate(self):
-        X = odeint( self.dvdt, [-65, 0.05, 0.6, 0.32], self.neuron.time_arr,args=(self,),mxstep=500 )
+        X = odeint( self.calc_deriv, y0=[self.initial_V, self.initial_m, self.initial_h, self.initial_n], t=self.neuron.time_arr,args=(self,) )
         self.neuron.vm = X[:,0]
-        return X
+        self.fill_current()
+        return X      
     
-    
+    """
+    Fills in the input amps array so that the graph can correctly contain it
+    """
+    def fill_current(self):
+        for idx in range(len(self.neuron.a)):
+            if idx > 450 / self.neuron.step:
+                self.neuron.a[idx] = 0
+            elif idx > 350 / self.neuron.step:
+                self.neuron.a[idx] = 25
+            elif idx > 300 / self.neuron.step:
+                self.neuron.a[idx] = 0
+            elif idx > 200 / self.neuron.step:
+                self.neuron.a[idx] = 13
+            elif idx > 150 / self.neuron.step:
+                self.neuron.a[idx] = 0
+            else:
+                self.neuron.a[idx] = 4
+        
     """
     Calculating rate of gates opening in Potassium channels
     """
@@ -194,19 +220,18 @@ class hodgkinhuxley:
     Returning the input current based on time
     """
     def I_in(self, t):
-        """
-        if t > 75:
+        if t > 450:
             return 0
-        elif t > 55:
-            return 35
-        elif t > 35:
+        elif t > 350:
+            return 25
+        elif t > 300:
             return 0
-        elif t > 15:
-            return 10
+        elif t > 200:
+            return 13
+        elif t > 150:
+            return 0
         else:
-            return 0
-       """
-        return 10*(t>100) - 10*(t>200) + 35*(t>300) - 35*(t>400)
+            return 4
     """
     Calculate the leaking current
     """
@@ -216,19 +241,22 @@ class hodgkinhuxley:
     Calcuate the sodium current
     """
     def I_Na(self, m, h, V):
-        return self.g_Na * m**3 * h * ( V - self.v_Na )
+        return self.g_Na * (m**3) * h * ( V - self.v_Na )
     """
     Calculate the potassium current
     """
     def I_K(self, n, V):
-        return self.g_K * n**4 * ( V - self.v_K )
+        return self.g_K * (n**4) * ( V - self.v_K )
+    
     """
-    Calculate dv/dt at the given time
+    Calculate dv/dt (and other derivatives) at the given time
     """
     @staticmethod
-    def dvdt(X, t, self):
-        V, m, h, n = X
-        dVdt = (self.I_in(t) - self.I_Na(V, m, h) - self.I_K(V, n) - self.I_leak(V)) / self.c_m
+    def calc_deriv(params, t, self):
+        V, m, h, n = params
+        #print("Time: {}, V: {}, m: {}, h: {}, n: {}".format(t,V,m,h,n))
+        #print("I_in: {}, I_Na: {}, I_K: {}, I_leak: {}".format(self.I_in(t), self.I_Na(m, h, V), self.I_K(n,V), self.I_leak(V)))
+        dVdt = (self.I_in(t) - self.I_Na(m, h, V) - self.I_K(n,V) - self.I_leak(V)) / self.c_m
         dmdt = self.a_m(V)*(1.0-m) - self.b_m(V)*m
         dhdt = self.a_h(V)*(1.0-h) - self.b_h(V)*h
         dndt = self.a_n(V)*(1.0-n) - self.b_n(V)*n
