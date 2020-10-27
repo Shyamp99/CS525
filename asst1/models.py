@@ -193,19 +193,36 @@ class hodgkinhuxley:
     Returning the input current based on time
     """
     def I_in(self, t):
-        pass
+        if t > 4:
+            return 0
+        elif t > 3:
+            return 35
+        elif t > 2:
+            return 0
+        elif t > 1:
+            return 10
+        else:
+            return 0
     """
     Calculate the leaking current
     """
     def I_leak(self, V):
-        pass
+        return self.g_L * ( V - self.v_L )
     """
     Calcuate the sodium current
     """
     def I_Na(self, m, h, V):
-        pass
+        return self.g_Na * m**3 * h * ( V - self.v_Na )
     """
     Calculate the potassium current
     """
     def I_K(self, n, V):
-        pass
+        return self.g_K * n**4 * ( V - self.v_K )
+    """
+    Calculate dv/dt at the given time
+    """
+    @staticmethod
+    def dvdt(self, X, t):
+        V, m, h, n = X
+        dVdt = (self.I_inj(t) - self.I_Na(V, m, h) - self.I_K(V, n) - self.I_L(V)) / self.C_m
+        return dVdt
