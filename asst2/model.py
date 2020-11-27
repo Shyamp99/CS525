@@ -55,9 +55,8 @@ class lif:
     def current_voltage(self, input, step, prev):
         return ((-prev + input*self.rm) / self.tau)
 
-    # flip is the time when we want to up voltage: refers to index in time_arr
-    # flip end is obv the index at which we want to stop our current and set our current to 0
-    def simulate(self, flip, flip_end):
+    # basically called if teacher nueron or input neuron spikes 
+    def check_spike(self, flip, flip_end):
         step = self.neuron.step
         for i in range(1, len(self.neuron.vm)):
             prev = self.neuron.vm[i-1] if self.neuron.vm[i-1]<self.vt else self.vr
@@ -79,7 +78,7 @@ class AND_model:
     input_x and y are the 0 or 1 values, zero_fr and one_fr are the firing rates we are encoding 0 and 1 as
     post is our post synaptic neuron
     '''
-    def __init__(self, neuron, input_x, input_y, zero_fr = 1, one_fr = 3):
+    def __init__(self, neuron, input_x, input_y, zero_fr = 1, one_fr = 4):
         #initialize both to 0.5 because 1/number of weights since we're using oja's rule
         self.weights = [0.5,0.5]
         self.zero_fr = zero_fr
@@ -88,9 +87,12 @@ class AND_model:
         self.input_x = input_x
         self.input_y = input_y
         
-    def forward_pass(time, timestep):
+    def train(self, ):
+        #using oja's rule here
+        # teacher is effectively just going to self.post and yeeting in current
+        pass
+
+    def sim(self, time, timestep):
         # rough logic: we loop over time/timestep and each iteration of the loop is a time step
         # it either inducesa spike in x or y which are solely represented via firing rates
         pass
-
-    def 
