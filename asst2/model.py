@@ -11,15 +11,14 @@ class neuron:
         self.timestep = step
         #our spike threshold
         self.vt = vt
-        # so simulate, i value in this arr is considered to be 1 step
-        # so element 0 is t = 0 and element n is t = n*(1/step)
+        # time_arr may be needed for graphing - will remove if not needed
         # self.time_arr = np.arange(0, time+1, step)
         # tells us when spikes via a 1
         self.spikes = np.zeros(int(time/step)+1)
         
         
-    # if mode is 0 we are plotting hodkins huxley and don't need a spike threshold line
-    def plot_graph(self, title, mode = 1):
+    # need to implement raster plot via matplotlib or plotly - idt plotly has raster plot
+    def plot_graph(self, title):
         pass
 
 
@@ -46,7 +45,9 @@ class lif:
         if train:
             pass
         else:
+            # updating voltage based on formula for LIF/from last assignment
             self.mp += self.update_voltage(input_current, self.mp)
+            #if spike we handle reset
             if self.mp >= self.vt:
                 self.mp = self.vr
                 self.neuron.spikes[time] = 1
@@ -60,6 +61,7 @@ class AND_model:
     def __init__(self, neuron, input_x, input_y, zero_fr = 1, one_fr = 4, time = 5):
         #initialize both to 0.5 because 1/number of weights since we're using oja's rule
         self.w = np.array([0.5,0.5])
+        # encoded firerates for input - also used for decoding output
         self.zero_fr = zero_fr
         self.one_fr = one_fr
         #input v is will likely be removed but it's kept in for now
@@ -76,16 +78,15 @@ class AND_model:
         # teacher is effectively just going to self.post and yeeting in current
         pass
 
+    # basically just our forward pass w prediction for AND
     def sim(self):
-        # rough logic: we loop over time/timestep and each iteration of the loop is a time step
-        # it either inducesa spike in x or y which are solely represented via firing rates
-        #ideally 
         for i in range(len(self.post.neuron.spikes)):
             # spike in x neuron if input_x == 1 otherwise 0
             self.post.check_spike(self.input_x*self.w[0], i) if self.input_x == 1 else self.post.check_spike(0, i)
             # spike in x neuron if input_y == 1 otherwise 0
             self.post.check_spike(self.input_y*self.w[0], i) if self.input_y == 1 else self.post.check_spike(0, i) 
-        if round(float(np.count_nonzeros(self.post.neuron.spikes)/self.post.neuron.time)):
+        # checking if firerate of post == firerate of 1
+        if round(float(np.count_nonzeros(self.post.neuron.spikes)/self.post.neuron.time)) == self.one_fr:
             return 1
         else:
             return 0
