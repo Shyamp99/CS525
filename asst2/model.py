@@ -104,12 +104,16 @@ class AND_model:
                 # for input neuron x
                 self.post.check_spike(input_x*self.w[0], i, train = True, label = label)
                 curr_fr = round(float(np.count_nonzeros(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
-                self.w[0] += oja(x_fr, curr_fr, alpha, self.w[0])
+                dw = oja(x_fr, curr_fr, alpha, self.w[0])
+                self.w[0] += dw
+                self.w[1] -= dw
                 
                 #for input neuron y
-                self.post.check_spike(input_y*self.w[0], i, train = True, label = label)
+                self.post.check_spike(input_y*self.w[1], i, train = True, label = label)
                 curr_fr = round(float(np.count_nonzeros(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
-                self.w[0] += oja(y_fr, curr_fr, alpha, self.w[0])
+                dw = oja(y_fr, curr_fr, alpha, self.w[1])
+                self.w[1] += dw
+                self.w[0] -= dw
 
     # basically just our forward pass w prediction for AND
     def sim(self):
