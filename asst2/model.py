@@ -43,10 +43,21 @@ class lif:
     # basically called if teacher nueron or input neuron spikes 
     def check_spike(self, input_current, time, train = False, label = None):
         if train:
-            pass
+            if label == 1:
+                self.mp = self.vr
+                self.neuron.spikes[time] = 1
+            else:
+                # updating voltage based on formula for LIF/from last assignment
+                self.mp += self.update_voltage(input_current, self.mp)
+
+                #if spike we handle reset
+                if self.mp >= self.vt:
+                    self.mp = self.vr
+                    self.neuron.spikes[time] = 1
         else:
             # updating voltage based on formula for LIF/from last assignment
             self.mp += self.update_voltage(input_current, self.mp)
+
             #if spike we handle reset
             if self.mp >= self.vt:
                 self.mp = self.vr
@@ -61,9 +72,11 @@ class AND_model:
     def __init__(self, neuron, input_x, input_y, zero_fr = 1, one_fr = 4, time = 5):
         #initialize both to 0.5 because 1/number of weights since we're using oja's rule
         self.w = np.array([0.5,0.5])
+
         # encoded firerates for input - also used for decoding output
         self.zero_fr = zero_fr
         self.one_fr = one_fr
+
         #input v is will likely be removed but it's kept in for now
         self.input_x = input_x
         self.input_y = input_y
@@ -73,18 +86,38 @@ class AND_model:
     inputs is an array of tuples: (input_x, input_y, label)
     Using oja's rule and rough logic is that for each input we run a sim and then
     '''   
-    def train(self, inputs):
-        #using oja's rule here
-        # teacher is effectively just going to self.post and yeeting in current
-        pass
+    def train(self, inputs, alpha = 0.0001):
+        # lambda to calculate dw (weight change) in oja's
+        oja = lambda in_fr, out_fr, alpha, weight: alpha*(in_fr*out_fr-weight*out_fr**2)
+
+        # going through the inputs in a batch
+        for inp in inputs:
+            input_x = inp[0]
+            x_fr = self.one_fr if input_x == 1 else self.zero_fr
+            input_y = inp[1]
+            y_fr = self.one_fr if input_y == 1 else self.zero_fr
+            label = inp[2]
+
+            # running the simulation for training
+            # logic: calculate how input affects post and then run oja's for each specific weight
+            for i in range(len(self.post.neuron.spikes)):
+                # for input neuron x
+                self.post.check_spike(input_x*self.w[0], i, train = True, label = label)
+                curr_fr = round(float(np.count_nonzeros(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
+                self.w[0] += oja(x_fr, curr_fr, alpha, self.w[0])
+                
+                #for input neuron y
+                self.post.check_spike(input_y*self.w[0], i, train = True, label = label)
+                curr_fr = round(float(np.count_nonzeros(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
+                self.w[0] += oja(y_fr, curr_fr, alpha, self.w[0])
 
     # basically just our forward pass w prediction for AND
     def sim(self):
         for i in range(len(self.post.neuron.spikes)):
-            # spike in x neuron if input_x == 1 otherwise 0
-            self.post.check_spike(self.input_x*self.w[0], i) if self.input_x == 1 else self.post.check_spike(0, i)
-            # spike in x neuron if input_y == 1 otherwise 0
-            self.post.check_spike(self.input_y*self.w[0], i) if self.input_y == 1 else self.post.check_spike(0, i) 
+            # spike in x neuron if input_x == 1 otherwise 0 then same logic for input y neuron
+            self.post.check_spike(self.input_x*self.w[0], i)
+            self.post.check_spike(self.input_y*self.w[0], i) 
+        
         # checking if firerate of post == firerate of 1
         if round(float(np.count_nonzeros(self.post.neuron.spikes)/self.post.neuron.time)) == self.one_fr:
             return 1
