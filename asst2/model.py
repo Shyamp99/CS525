@@ -43,6 +43,9 @@ class lif:
     # basically called if teacher nueron or input neuron spikes 
     def check_spike(self, input_current, time, train = False, label = None):
         if train:
+            # updating voltage based on formula for LIF/from last assignment
+            self.mp += self.update_voltage(input_current, self.mp)
+
             if label == 1:
                 self.mp = self.vr
                 self.neuron.spikes[time] = 1
@@ -69,7 +72,7 @@ class AND_model:
     input_x and y are the 0 or 1 values, zero_fr and one_fr are the firing rates we are encoding 0 and 1 as
     post is our post synaptic neuron
     '''
-    def __init__(self, neuron, input_x, input_y, zero_fr = 1, one_fr = 4, time = 5):
+    def __init__(self, zero_fr = 1, one_fr = 4, time = 5):
         #initialize both to 0.5 because 1/number of weights since we're using oja's rule
         self.w = np.array([0.5,0.5])
 
@@ -77,9 +80,6 @@ class AND_model:
         self.zero_fr = zero_fr
         self.one_fr = one_fr
 
-        #input v is will likely be removed but it's kept in for now
-        self.input_x = input_x
-        self.input_y = input_y
         self.post = lif(rm=10, cm=10, time = time, timestep = 1.0/one_fr, inputv = 0, vt=1, vr = 0)
         
     ''' 
@@ -92,6 +92,7 @@ class AND_model:
 
         # going through the inputs in a batch
         for inp in inputs:
+            
             input_x = inp[0]
             x_fr = self.one_fr if input_x == 1 else self.zero_fr
             input_y = inp[1]
@@ -103,27 +104,27 @@ class AND_model:
             for i in range(len(self.post.neuron.spikes)):
                 # for input neuron x
                 self.post.check_spike(input_x*self.w[0], i, train = True, label = label)
-                curr_fr = round(float(np.count_nonzeros(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
+                curr_fr = round(float(np.count_nonzero(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
                 dw = oja(x_fr, curr_fr, alpha, self.w[0])
                 self.w[0] += dw
                 self.w[1] -= dw
                 
                 #for input neuron y
                 self.post.check_spike(input_y*self.w[1], i, train = True, label = label)
-                curr_fr = round(float(np.count_nonzeros(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
+                curr_fr = round(float(np.count_nonzero(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
                 dw = oja(y_fr, curr_fr, alpha, self.w[1])
                 self.w[1] += dw
                 self.w[0] -= dw
 
     # basically just our forward pass w prediction for AND
-    def sim(self):
+    def sim(self, input_x, input_y):
         for i in range(len(self.post.neuron.spikes)):
             # spike in x neuron if input_x == 1 otherwise 0 then same logic for input y neuron
-            self.post.check_spike(self.input_x*self.w[0], i)
-            self.post.check_spike(self.input_y*self.w[0], i) 
-        
+            self.post.check_spike(input_x*self.w[0], i)
+            self.post.check_spike(input_y*self.w[0], i) 
+        print(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)
         # checking if firerate of post == firerate of 1
-        if round(float(np.count_nonzeros(self.post.neuron.spikes)/self.post.neuron.time)) == self.one_fr:
+        if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) == self.one_fr:
             return 1
         else:
             return 0
