@@ -30,28 +30,31 @@ class lif:
         self.rm = rm
         self.cm = cm
         self.tau = rm*cm
-        self.inputv = inputv
         self.vt = vt
         self.vr = vr
         self.mp = 0
 
     # we are just solving for dv here
     # for updating mp with each iteration
-    def update_voltage(self, input, prev):
-        return ((-1*self.mp + input*self.rm) / self.tau)
+    def update_voltage(self, input_curr):
+        if input_curr == 0:
+            return 0
+        else:
+            print(input_curr)
+        return ((-1*self.mp + input_curr*self.rm) / self.tau)
 
     # basically called if teacher nueron or input neuron spikes 
     def check_spike(self, input_current, time, train = False, label = None):
         if train:
             # updating voltage based on formula for LIF/from last assignment
-            self.mp += self.update_voltage(input_current, self.mp)
+            self.mp += self.update_voltage(input_current)
 
             if label == 1:
                 self.mp = self.vr
                 self.neuron.spikes[time] = 1
             else:
                 # updating voltage based on formula for LIF/from last assignment
-                self.mp += self.update_voltage(input_current, self.mp)
+                self.mp += self.update_voltage(input_current)
 
                 #if spike we handle reset
                 if self.mp >= self.vt:
@@ -59,9 +62,13 @@ class lif:
                     self.neuron.spikes[time] = 1
         else:
             # updating voltage based on formula for LIF/from last assignment
-            self.mp += self.update_voltage(input_current, self.mp)
+            self.mp += self.update_voltage(input_current)
 
-            #if spike we handle reset
+            # for debugging
+            # if input_current == 0:
+            #     print(self.mp)
+
+            # if spike we handle reset
             if self.mp >= self.vt:
                 self.mp = self.vr
                 self.neuron.spikes[time] = 1
@@ -80,7 +87,7 @@ class AND_model:
         self.zero_fr = zero_fr
         self.one_fr = one_fr
 
-        self.post = lif(rm=10, cm=10, time = time, timestep = 1.0/one_fr, inputv = 0, vt=1, vr = 0)
+        self.post = lif(rm=5, cm=1, time = time, timestep = 1.0/one_fr, inputv = 0, vt=1, vr = 0)
         
     ''' 
     inputs is an array of tuples: (input_x, input_y, label)
@@ -115,14 +122,16 @@ class AND_model:
                 dw = oja(y_fr, curr_fr, alpha, self.w[1])
                 self.w[1] += dw
                 self.w[0] -= dw
+            self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
 
     # basically just our forward pass w prediction for AND
     def sim(self, input_x, input_y):
         for i in range(len(self.post.neuron.spikes)):
             # spike in x neuron if input_x == 1 otherwise 0 then same logic for input y neuron
             self.post.check_spike(input_x*self.w[0], i)
-            self.post.check_spike(input_y*self.w[0], i) 
-        print(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)
+            self.post.check_spike(input_y*self.w[1], i) 
+        print(self.post.neuron.spikes)
+        print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
         # checking if firerate of post == firerate of 1
         if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) == self.one_fr:
             return 1
