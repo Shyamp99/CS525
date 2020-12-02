@@ -71,7 +71,9 @@ class lif:
 
             # for debugging
             # if self.mp == 0:
-            #     print("check_spike mp = ", temp)
+                # print("check_spike input current = ", input_current)
+                # print("check_spike temp = ", temp)
+                # print("check_spike mp = ", self.mp, '\n')
 
             # if spike we handle reset
             if self.mp >= self.vt:
@@ -119,14 +121,29 @@ class AND_model:
             # logic: calculate how input affects post and then run oja's for each specific weight
             for i in range(len(self.post.neuron.spikes)):
                 # for input neuron x
-                self.post.check_spike(input_x*self.w[0], i, train = True, label = label)
+                if input_x == 1:
+                    self.post.check_spike(self.w[0], i, train = True, label = label)
+                else:
+                    # checking to see if we are at whole second since zero_fr = 1 hz
+                    if i % self.post.neuron.time == 0:
+                        self.post.check_spike(self.w[0], i, train = True, label = label)
+                    else:
+                        self.post.check_spike(0, i, train = True, label = label)
+
                 curr_fr = round(float(np.count_nonzero(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
                 dw = oja(x_fr, curr_fr, alpha, self.w[0])
                 self.w[0] += dw
                 self.w[1] -= dw
                 
                 #for input neuron y
-                self.post.check_spike(input_y*self.w[1], i, train = True, label = label)
+                if input_y == 1:
+                    self.post.check_spike(self.w[1], i, train = True, label = label)
+                else:
+                    # checking to see if we are at whole second since zero_fr = 1 hz
+                    if i % self.post.neuron.time == 0:
+                        self.post.check_spike(self.w[1], i, train = True, label = label)
+                    else:
+                        self.post.check_spike(0, i, train = True, label = label)
                 curr_fr = round(float(np.count_nonzero(self.post.neuron.spikes)/((i+1)*self.post.neuron.timestep)))
                 dw = oja(y_fr, curr_fr, alpha, self.w[1])
                 self.w[1] += dw
@@ -138,12 +155,28 @@ class AND_model:
     def sim(self, input_x, input_y):
         for i in range(len(self.post.neuron.spikes)):
             # spike in x neuron if input_x == 1 otherwise 0 then same logic for input y neuron
-            self.post.check_spike(input_x*self.w[0], i)
-            self.post.check_spike(input_y*self.w[1], i)
+            if input_x == 1:
+                self.post.check_spike(input_x*self.w[0], i)
+            else:
+                # checking to see if we are at whole second since zero_fr = 1 hz
+                if i % self.post.neuron.time == 0:
+                    self.post.check_spike(self.w[0], i)
+                else:
+                    self.post.check_spike(0, i)
+
+            #for input neuron y
+            if input_y == 1:
+                self.post.check_spike(self.w[1], i)
+            else:
+                # checking to see if we are at whole second since zero_fr = 1 hz
+                if i % self.post.neuron.time == 0:
+                    self.post.check_spike(self.w[1], i)
+                else:
+                    self.post.check_spike(0, i)
         
         # for debugging
-        # print(self.post.neuron.spikes)
-        # print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
+        print(self.post.neuron.spikes)
+        print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
 
         # checking if firerate of post == firerate of 1
         if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) >= self.target_fr:
