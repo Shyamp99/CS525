@@ -39,8 +39,8 @@ class lif:
     def update_voltage(self, input_curr):
         if input_curr == 0:
             return 0
-        else:
-            print(input_curr)
+        # else:
+        #     print(input_curr)
         return ((-1*self.mp + input_curr*self.rm) / self.tau)
 
     # basically called if teacher nueron or input neuron spikes 
@@ -62,16 +62,21 @@ class lif:
                     self.neuron.spikes[time] = 1
         else:
             # updating voltage based on formula for LIF/from last assignment
-            self.mp += self.update_voltage(input_current)
+            temp = self.update_voltage(input_current)
+            self.mp += temp
 
             # for debugging
-            # if input_current == 0:
-            #     print(self.mp)
+            # if self.mp == 0:
+            #     print("check_spike mp = ", temp)
 
             # if spike we handle reset
             if self.mp >= self.vt:
                 self.mp = self.vr
                 self.neuron.spikes[time] = 1
+
+            # for debugging
+            # else:
+            #     print(self.mp)
 
 
 class AND_model:
@@ -122,6 +127,7 @@ class AND_model:
                 dw = oja(y_fr, curr_fr, alpha, self.w[1])
                 self.w[1] += dw
                 self.w[0] -= dw
+            self.post.mp = 0
             self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
 
     # basically just our forward pass w prediction for AND
@@ -129,11 +135,18 @@ class AND_model:
         for i in range(len(self.post.neuron.spikes)):
             # spike in x neuron if input_x == 1 otherwise 0 then same logic for input y neuron
             self.post.check_spike(input_x*self.w[0], i)
-            self.post.check_spike(input_y*self.w[1], i) 
-        print(self.post.neuron.spikes)
-        print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
+            self.post.check_spike(input_y*self.w[1], i)
+        
+        # for debugging
+        # print(self.post.neuron.spikes)
+        # print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
+
         # checking if firerate of post == firerate of 1
-        if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) == self.one_fr:
+        if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) >= self.one_fr-1:
+            self.post.mp = 0
+            self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
             return 1
         else:
+            self.post.mp = 0
+            self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
             return 0
