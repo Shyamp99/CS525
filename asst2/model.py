@@ -63,6 +63,10 @@ class lif:
         else:
             # updating voltage based on formula for LIF/from last assignment
             temp = self.update_voltage(input_current)
+
+            # debug print
+            # print("input_current = ", input_current, " temp = ", temp, " mp = ", self.mp)
+
             self.mp += temp
 
             # for debugging
@@ -84,15 +88,15 @@ class AND_model:
     input_x and y are the 0 or 1 values, zero_fr and one_fr are the firing rates we are encoding 0 and 1 as
     post is our post synaptic neuron
     '''
-    def __init__(self, zero_fr = 1, one_fr = 4, time = 5):
+    def __init__(self, target_fr = 4, zero_fr = 1, one_fr = 4, time = 5):
         #initialize both to 0.5 because 1/number of weights since we're using oja's rule
         self.w = np.array([0.5,0.5])
 
         # encoded firerates for input - also used for decoding output
         self.zero_fr = zero_fr
         self.one_fr = one_fr
-
-        self.post = lif(rm=5, cm=1, time = time, timestep = 1.0/one_fr, inputv = 0, vt=1, vr = 0)
+        self.target_fr = target_fr
+        self.post = lif(rm=5, cm=0.75, time = time, timestep = 1.0/one_fr, inputv = 0, vt=1, vr = 0)
         
     ''' 
     inputs is an array of tuples: (input_x, input_y, label)
@@ -142,7 +146,7 @@ class AND_model:
         # print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
 
         # checking if firerate of post == firerate of 1
-        if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) >= self.one_fr-1:
+        if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) >= self.target_fr:
             self.post.mp = 0
             self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
             return 1
