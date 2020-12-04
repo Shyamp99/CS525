@@ -19,8 +19,48 @@ class neuron:
         
     # need to implement raster plot via matplotlib or plotly - idt plotly has raster plot
     def plot_graph(self, title):
-        pass
+	# Set x-axis as time intervals 
+	numTimeSteps = int(totalTime / timeStepSize)
+	startTime = 0
+	endTime = totalTime
+	#temp = np.arange(0,1,1/len(x_spike))
+	temp = np.arange(0, totalTime + timeStepSize, timeStepSize)
+	print("temp: {}".format(temp))
+	#print("totalTime: {} timeStepSize: {} numTimeSteps: {}".format(totalTime, timeStepSize, numTimeSteps))
 
+	# Create 3 x numTimeSteps size 2d array filled with zeros
+	neuralData = []
+	neuralData.append(x_spike*temp)
+	neuralData.append(y_spike*temp)
+	neuralData.append(post_spike*temp)
+
+	print("Neural data: {}".format(neuralData))
+	'''	
+	row_count = 0
+	for row in neuralData:
+		col_count = 0
+		for col in neuralData[row_count]:
+			print(neuralData[row_count][col_count])
+			col_count+=1
+		row_count+=1
+		print("\n")
+	'''
+	# Draw a spike raster plot
+	colorCodes = np.array([[0, 0, 0],
+				[1, 0, 0],
+				[0, 1, 0]])
+	lineSize = [1, 1, 1]                                  
+	plot.eventplot(neuralData, color=colorCodes, linelengths = lineSize)     
+	plot.title('Spike raster plot')
+
+	# Give x axis label for the spike raster plot
+	plot.xlabel('Timesteps')
+
+	# Give y axis label for the spike raster plot
+	plot.ylabel('Neuron')
+
+	# Display the spike raster plot
+	plot.show()
 
 class lif:
     # rm = resitance, cm = capcitence,
