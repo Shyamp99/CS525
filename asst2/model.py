@@ -2,6 +2,7 @@ import numpy as np
 import plotly as pt
 import plotly.graph_objects as go
 import matplotlib as plt
+import matplotlib.pyplot as plot
 import math
 
 class neuron:
@@ -18,49 +19,43 @@ class neuron:
         
         
     # need to implement raster plot via matplotlib or plotly - idt plotly has raster plot
-    def plot_graph(self, title):
-	# Set x-axis as time intervals 
-	numTimeSteps = int(totalTime / timeStepSize)
-	startTime = 0
-	endTime = totalTime
-	#temp = np.arange(0,1,1/len(x_spike))
-	temp = np.arange(0, totalTime + timeStepSize, timeStepSize)
-	print("temp: {}".format(temp))
-	#print("totalTime: {} timeStepSize: {} numTimeSteps: {}".format(totalTime, timeStepSize, numTimeSteps))
+    def plot_graph(self, title, x_spike, y_spike):
 
-	# Create 3 x numTimeSteps size 2d array filled with zeros
-	neuralData = []
-	neuralData.append(x_spike*temp)
-	neuralData.append(y_spike*temp)
-	neuralData.append(post_spike*temp)
+        post_spike = self.spikes
+        totalTime=self.time
+        timeStepSize=self.timestep
 
-	print("Neural data: {}".format(neuralData))
-	'''	
-	row_count = 0
-	for row in neuralData:
-		col_count = 0
-		for col in neuralData[row_count]:
-			print(neuralData[row_count][col_count])
-			col_count+=1
-		row_count+=1
-		print("\n")
-	'''
-	# Draw a spike raster plot
-	colorCodes = np.array([[0, 0, 0],
-				[1, 0, 0],
-				[0, 1, 0]])
-	lineSize = [1, 1, 1]                                  
-	plot.eventplot(neuralData, color=colorCodes, linelengths = lineSize)     
-	plot.title('Spike raster plot')
+        #temp = np.arange(0,1,1/len(x_spike))
+        temp = np.arange(0, totalTime + timeStepSize, timeStepSize)
+        # print("temp: {}".format(temp))
+        #print("totalTime: {} timeStepSize: {} numTimeSteps: {}".format(totalTime, timeStepSize, numTimeSteps))
 
-	# Give x axis label for the spike raster plot
-	plot.xlabel('Timesteps')
+        # Create 3 x numTimeSteps size 2d array filled with zeros
+        neuralData = []
+        neuralData.append(x_spike*temp)
+        neuralData.append(y_spike*temp)
+        neuralData.append(post_spike*temp)
 
-	# Give y axis label for the spike raster plot
-	plot.ylabel('Neuron')
+        # debug print
+        # print("Neural data: {}".format(neuralData))
 
-	# Display the spike raster plot
-	plot.show()
+        # Draw a spike raster plot
+        colorCodes = np.array([[0, 0, 0],
+                    [1, 0, 0],
+                    [0, 1, 0]])
+
+        lineSize = [0.75, 0.75, 0.75]                                  
+        plot.eventplot(neuralData, color=colorCodes, linelengths = lineSize)     
+        plot.title(title)
+
+        # Give x axis label for the spike raster plot
+        plot.xlabel('Timesteps')
+
+        # Give y axis label for the spike raster plot
+        plot.ylabel('Neuron')
+
+        # Display the spike raster plot
+        plot.show()
 
 class lif:
     # rm = resitance, cm = capcitence,
@@ -85,6 +80,8 @@ class lif:
 
     # basically called if teacher nueron or input neuron spikes 
     def check_spike(self, input_current, time, train = False, label = None):
+        if time == 0:
+            return
         if train:
             # updating voltage based on formula for LIF/from last assignment
             self.mp += self.update_voltage(input_current)
@@ -215,15 +212,34 @@ class AND_model:
                     self.post.check_spike(0, i)
         
         # for debugging
-        print(self.post.neuron.spikes)
-        print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
+        # print("Spiketrain for Post: ", self.post.neuron.spikes)
+        # print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
+
+        #preparing the plot
+        title = 'Raster plot for X = ' + str(input_x) + ' and Y = '+ str(input_y) 
+        if input_x == 1:
+            x_spike = np.ones(len(self.post.neuron.spikes))
+        else:
+            x_spike = np.zeros(len(self.post.neuron.spikes))
+            for i in range(len(self.post.neuron.spikes)):
+                if i!= 0 and i % self.post.neuron.time == 0:
+                    x_spike[i] = 1
+        if input_y == 1:
+            y_spike = np.ones(len(self.post.neuron.spikes))
+        else:
+            y_spike = np.zeros(len(self.post.neuron.spikes))
+            for i in range(len(self.post.neuron.spikes)):
+                if i!= 0 and i % self.post.neuron.time == 0:
+                    y_spike[i] = 1
 
         # checking if firerate of post == firerate of 1
         if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) >= self.target_fr:
+            self.post.neuron.plot_graph(title, x_spike, y_spike)
             self.post.mp = 0
             self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
             return 1
         else:
+            self.post.neuron.plot_graph(title, x_spike, y_spike)
             self.post.mp = 0
             self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
             return 0
