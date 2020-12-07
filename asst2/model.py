@@ -18,7 +18,7 @@ class neuron:
         self.spikes = np.zeros(int(time/step)+1)
         
         
-    # need to implement raster plot via matplotlib or plotly - idt plotly has raster plot
+    # x_spike and y_spike are the respective spiketrains for the and_model
     def plot_graph(self, title, x_spike, y_spike):
 
         post_spike = self.spikes
@@ -53,6 +53,8 @@ class neuron:
 
         # Give y axis label for the spike raster plot
         plot.ylabel('Neuron')
+        plot.yticks(np.arange(3), ['Post', 'Y', 'X'])
+        # print(temp*x_spike)
 
         # Display the spike raster plot
         plot.show()
@@ -217,8 +219,10 @@ class AND_model:
 
         #preparing the plot
         title = 'Raster plot for X = ' + str(input_x) + ' and Y = '+ str(input_y) 
+        print('input_x: ', type(input_x))
         if input_x == 1:
             x_spike = np.ones(len(self.post.neuron.spikes))
+            print(x_spike)
         else:
             x_spike = np.zeros(len(self.post.neuron.spikes))
             for i in range(len(self.post.neuron.spikes)):
