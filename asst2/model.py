@@ -112,7 +112,7 @@ class lif:
             temp = self.update_voltage(input_current)
 
             # debug print
-            print("input_current = ", input_current, " temp = ", temp, " mp = ", self.mp)
+            # print("input_current = ", input_current, " temp = ", temp, " mp = ", self.mp)
 
             self.mp += temp
 
@@ -300,8 +300,28 @@ class num_model:
             if index != i:
                 self.weights[index][out_index] -= dw/(len(self.weights)-1)
 
-    def train(self):
-        pass
+     #inputs is tuple of (flattened image arr, label number as int)
+    def train(self, inputs):
+        image_arr, label = inputs[0], inputs[1]
+        for time in range(len(self.output_neurons[0].neuron.spikes)):
+            # output neurons
+            for out_n in range(len(self.output_neurons)):
+                #input neurons
+                curr_out = self.output_neurons[out_n]
+                for in_n in range(64):
+                    curr_weight = self.weights[out_n][in_n]
+                    # input neuron is spiking
+                    if image_arr[in_n]!=0:
+                        if (time%16)%image_arr[in_n] == 0:
+                            curr_out.check_spike(curr_weight, time, train = True)
+                    # input neuron doesn't fire or fr = 0
+                    else:
+                        curr_out.check_spike(0, time, train = True)
+
+                    in_fr = image_arr[in_n]
+                    self.oja(in_n, out_n, in_fr, label)
+        
+        self.reset_nn()
 
     def sim(self, image_arr):
         for time in range(len(self.output_neurons[0].neuron.spikes)):
