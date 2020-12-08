@@ -93,6 +93,9 @@ class lif:
             if label == 1:
                 self.mp = self.vr
                 self.neuron.spikes[time] = 1
+            if self.mp >= self.vt:
+                    self.mp = self.vr
+                    self.neuron.spikes[time] = 1
             else:
                 # updating voltage based on formula for LIF/from last assignment
                 self.mp += self.update_voltage(input_current)
@@ -288,10 +291,10 @@ class snn:
                     # input neuron is spiking
                     if image_arr[in_n]!=0:
                         if (time%16)%image_arr[in_n] == 0:
-                            curr_out.check_spike(curr_weight, time)
+                            curr_out.check_spike(curr_weight, time, train = True)
                     # input neuron doesn't fire or fr = 0
                     else:
-                        curr_out.check_spike(0, time)
+                        curr_out.check_spike(0, time, train = True)
 
                     in_fr = image_arr[in_n]
                     self.oja(in_n, out_n, in_fr, label)
@@ -321,8 +324,9 @@ class snn:
         max_neuron = 0
         for i in range(len(self.output_neurons)):
             fr = self.output_neurons[i].neuron.calc_fr()
+            print(fr)
             if fr > max_fr:
                 max_fr = fr
                 max_neuron = i
-        self.reset_nn(full_reset = True)
+        # self.reset_nn(full_reset = True)
         return max_neuron+1
