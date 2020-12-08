@@ -247,3 +247,32 @@ class AND_model:
             self.post.mp = 0
             self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
             return 0
+
+class num_model:
+    
+    def __init__(self):
+        pass
+    
+    '''
+    
+    '''
+    def poisson_encoding(self, image):
+        # normalize the image
+        normalized_image = np.divide( image, np.amax(image) )
+        
+        # Generate uniform random numbers
+        X = np.random.uniform( 0, 1, 64 )
+        
+        # Using both determine if specific pixel / neuron fires
+        dt = 1
+        fire = np.zeros( 64 )
+        for idx in range( len(normalized_image) ):
+            if normalized_image[idx] * dt > X[idx]:
+                fire[idx] = 1
+        return fire
+    
+    def train(self):
+        pass
+    
+    def sim(self):
+        pass
