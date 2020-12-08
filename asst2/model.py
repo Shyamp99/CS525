@@ -16,7 +16,10 @@ class neuron:
         # self.time_arr = np.arange(0, time+1, step)
         # tells us when spikes via a 1
         self.spikes = np.zeros(int(time/step)+1)
-        
+
+    def reset_spikes(self):
+         self.spikes = np.zeros(int(self.time/self.timestep)+1)
+
     def calc_fr(self):
         return round(float(np.count_nonzero(self.spikes)/(self.time))) 
 
@@ -268,15 +271,16 @@ class snn:
             self.weights = [[0.1]*64 for i in range(len(self.weights))]
          for i in range(len(self.output_neurons)):
              self.output_neurons[i].mp = 0
+             self.output_neurons[i].neuron.reset_spikes()
 
     # i = index of neuron weight that is increased, out_index = output neuron for that weight
-    def oja(self, i, out_index, in_fr, out_fr, alpha = 0.0001):
+    def oja(self, i, out_index, in_fr, out_fr, alpha = 1e-3):
         # print(i)
         dw = alpha*(in_fr*out_fr-self.weights[out_index][i]*out_fr**2)
         self.weights[out_index][i] += dw
         for index in range(len(self.weights)):
             if index != i:
-                self.weights[index][out_index] -= dw/(len(self.weights)-1)
+                self.weights[out_index][index] -= dw/(len(self.weights)-1)
     
     #inputs is tuple of (flattened image arr, label number as int)
     def train(self, inputs):
@@ -291,7 +295,9 @@ class snn:
                     # input neuron is spiking
                     if image_arr[in_n]!=0:
                         if (time%16)%image_arr[in_n] == 0:
-                            curr_out.check_spike(curr_weight, time, train = True)
+                            curr_out.check_spike(curr_weight, time, label = 1, train = True)
+                        else:
+                            curr_out.check_spike(0, time, train = True)
                     # input neuron doesn't fire or fr = 0
                     else:
                         curr_out.check_spike(0, time, train = True)
@@ -315,6 +321,8 @@ class snn:
                     if image_arr[in_n]!=0:
                         if (time%16)%image_arr[in_n] == 0:
                             curr_out.check_spike(curr_weight, time)
+                        else:
+                            curr_out.check_spike(0, time, train = True)
                     # input neuron doesn't fire or fr = 0
                     else:
                         curr_out.check_spike(0, time)
@@ -324,7 +332,7 @@ class snn:
         max_neuron = 0
         for i in range(len(self.output_neurons)):
             fr = self.output_neurons[i].neuron.calc_fr()
-            print(fr)
+            # print(fr)
             if fr > max_fr:
                 max_fr = fr
                 max_neuron = i
