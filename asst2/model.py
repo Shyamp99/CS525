@@ -314,7 +314,7 @@ class num_model:
             for i_neuron in range( 64 ):
                 print(self.weights[o_neuron][i_neuron], end=' ')
             print()
-                
+               
      #inputs is tuple of (flattened image arr, label number as int)
     def train(self, X, y, a):
         '''
@@ -345,6 +345,22 @@ class num_model:
         
         self.reset_nn()
 
+    def test(self, X_test, y_test):
+        num_correct = 0
+        for t in range( len(X_test) ):
+            #print("t: {}, Simulated: {}, Expected: {}".format(t, test.sim( X_test[t] ), y_test[t] ))
+            if self.sim( X_test[t] ) == y_test[t]:
+                num_correct += 1
+        return num_correct / len(X_test)
+    
+    def validate(self, X_val, y_val):
+        num_correct = 0
+        for t in range( len(X_val) ):
+            #print("t: {}, Simulated: {}, Expected: {}".format(t, test.sim( X_test[t] ), y_test[t] ))
+            if self.sim( X_val[t] ) == y_val[t]:
+                num_correct += 1
+        return num_correct / len(X_val)
+        
     def sim(self, image_arr):
         fire_map = self.poisson_encoding( image_arr )
         for time in range(len(self.output_neurons[0].neuron.spikes)):
