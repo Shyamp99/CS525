@@ -23,6 +23,27 @@ class neuron:
     def calc_fr(self):
         return round(float(np.count_nonzero(self.spikes)/(self.time))) 
 
+    def prep_plot(self, input_x, input_y):
+        #preparing the plot
+        title = 'Raster plot for X = ' + str(input_x) + ' and Y = '+ str(input_y) 
+        print('input_x: ', type(input_x))
+        if input_x == 1:
+            x_spike = np.ones(len(self.spikes))
+            print(x_spike)
+        else:
+            x_spike = np.zeros(len(self.spikes))
+            for i in range(len(self.spikes)):
+                if i!= 0 and i % self.time == 0:
+                    x_spike[i] = 1
+        if input_y == 1:
+            y_spike = np.ones(len(self.spikes))
+        else:
+            y_spike = np.zeros(len(self.spikes))
+            for i in range(len(self.spikes)):
+                if i!= 0 and i % self.time == 0:
+                    y_spike[i] = 1
+        self.plot_graph(title, x_spike, y_spike)
+
     # x_spike and y_spike are the respective spiketrains for the and_model
     def plot_graph(self, title, x_spike, y_spike):
 
@@ -230,34 +251,6 @@ class AND_model:
         # print("Spiketrain for Post: ", self.post.neuron.spikes)
         # print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
 
-        #preparing the plot
-        title = 'Raster plot for X = ' + str(input_x) + ' and Y = '+ str(input_y) 
-        print('input_x: ', type(input_x))
-        if input_x == 1:
-            x_spike = np.ones(len(self.post.neuron.spikes))
-            print(x_spike)
-        else:
-            x_spike = np.zeros(len(self.post.neuron.spikes))
-            for i in range(len(self.post.neuron.spikes)):
-                if i!= 0 and i % self.post.neuron.time == 0:
-                    x_spike[i] = 1
-        if input_y == 1:
-            y_spike = np.ones(len(self.post.neuron.spikes))
-        else:
-            y_spike = np.zeros(len(self.post.neuron.spikes))
-            for i in range(len(self.post.neuron.spikes)):
-                if i!= 0 and i % self.post.neuron.time == 0:
-                    y_spike[i] = 1
-
-        # checking if firerate of post == firerate of 1
-        if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) >= self.target_fr:
-            self.post.mp = 0
-            self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
-            return 1
-        else:
-            self.post.mp = 0
-            self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
-            return 0
 
 class num_model:
     
