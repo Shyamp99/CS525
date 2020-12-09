@@ -261,6 +261,16 @@ class num_model:
         self.weights = [[0]*64 for i in range(output_neuron_count)]
         self.output_neurons = [lif(rm=5, cm=0.75, time = time, timestep = timestep, inputv = 0, vt=1, vr = 0) for i in range(output_neuron_count)]
     
+    def plot_accuracies(self, results):
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x = np.arange(1, len(results)+1), y = results,mode = 'lines' name = 'Validation Accuracy (%)'))
+        fig.update_voltage(
+            title = 'Validation Accuracies for each Epoch',
+            xaxis_title="Epoch Number",
+            yaxis_title="Accuracy (%)"
+        )
+        fig.show()
+
     '''
     
     '''
