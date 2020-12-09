@@ -12,8 +12,6 @@ class neuron:
         self.timestep = step
         #our spike threshold
         self.vt = vt
-        # time_arr may be needed for graphing - will remove if not needed
-        # self.time_arr = np.arange(0, time+1, step)
         # tells us when spikes via a 1
         self.spikes = np.zeros(int(time/step)+1)
         
@@ -51,19 +49,13 @@ class neuron:
         totalTime=self.time
         timeStepSize=self.timestep
 
-        #temp = np.arange(0,1,1/len(x_spike))
         temp = np.arange(0, totalTime + timeStepSize, timeStepSize)
-        # print("temp: {}".format(temp))
-        #print("totalTime: {} timeStepSize: {} numTimeSteps: {}".format(totalTime, timeStepSize, numTimeSteps))
 
         # Create 3 x numTimeSteps size 2d array filled with zeros
         neuralData = []
         neuralData.append(x_spike*temp)
         neuralData.append(y_spike*temp)
         neuralData.append(post_spike*temp)
-
-        # debug print
-        # print("Neural data: {}".format(neuralData))
 
         # Draw a spike raster plot
         colorCodes = np.array([[0, 0, 0],
@@ -80,7 +72,6 @@ class neuron:
         # Give y axis label for the spike raster plot
         plot.ylabel('Neuron')
         plot.yticks(np.arange(3), ['Post', 'Y', 'X'])
-        # print(temp*x_spike)
 
         # Display the spike raster plot
         plot.show()
@@ -103,14 +94,10 @@ class lif:
     def update_voltage(self, input_curr):
         if input_curr == 0:
             return 0
-        # else:
-        #     print(input_curr)
         return ((-1*self.mp + input_curr*self.rm) / self.tau)
 
         # basically called if teacher nueron or input neuron spikes 
     def check_spike(self, input_current, time, train = False, label = None):
-        #if time == 0:
-        #    return
         if train:
             # updating voltage based on formula for LIF/from last assignment
             temp =  self.update_voltage(input_current)
@@ -137,26 +124,13 @@ class lif:
             # updating voltage based on formula for LIF/from last assignment
             temp = self.update_voltage(input_current)
 
-            # debug print
-            # print("input_current = ", input_current, " temp = ", temp, " mp = ", self.mp)
-
             self.mp += temp
             self.total_current += temp
-
-            # for debugging
-            # if self.mp == 0:
-                # print("check_spike input current = ", input_current)
-                # print("check_spike temp = ", temp)
-                # print("check_spike mp = ", self.mp, '\n')
 
             # if spike we handle reset
             if self.mp >= self.vt:
                 self.mp = self.vr
                 self.neuron.spikes[time] = 1
-
-            # for debugging
-            # else:
-            #     print(self.mp)
 
 class AND_model:
     '''
@@ -191,7 +165,6 @@ class AND_model:
             label = inp[2]
 
             # running the simulation for training
-            # logic: calculate how input affects post and then run oja's for each specific weight
             for i in range(len(self.post.neuron.spikes)):
                 # for input neuron x
                 if input_x == 1:
@@ -247,10 +220,14 @@ class AND_model:
                 else:
                     self.post.check_spike(0, i)
         
-        # for debugging
-        # print("Spiketrain for Post: ", self.post.neuron.spikes)
-        # print("calculated firing rate: ", np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time, '\n\n')
-
+        if round(float(np.count_nonzero(self.post.neuron.spikes)/self.post.neuron.time)) >= self.target_fr:
+            self.post.mp = 0
+            self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
+            return 1
+        else:
+            self.post.mp = 0
+            self.post.neuron.spikes = np.zeros(int(self.post.neuron.time/self.post.neuron.timestep)+1)
+            return 0
 
 class num_model:
     
@@ -263,17 +240,14 @@ class num_model:
     
     def plot_accuracies(self, results):
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x = np.arange(1, len(results)+1), y = results,mode = 'lines' name = 'Validation Accuracy (%)'))
-        fig.update_voltage(
+        fig.add_trace(go.Scatter(x = np.arange(1, len(results)+1), y = results,mode = 'lines', name = 'Validation Accuracy (%)'))
+        fig.update_layout(
             title = 'Validation Accuracies for each Epoch',
             xaxis_title="Epoch Number",
             yaxis_title="Accuracy (%)"
         )
         fig.show()
 
-    '''
-    
-    '''
     def poisson_encoding(self, image):
         # normalize the image
         normalized_image = np.divide( image, np.amax(image) )
@@ -290,7 +264,7 @@ class num_model:
         return fire
 
     
-        # full_reset implies a full reset of weights
+    # full_reset implies a full reset of weights
     def reset_nn(self, full_reset = False):
         if full_reset:
             self.weights = [[0.1]*64 for i in range(len(self.weights))]
@@ -301,7 +275,6 @@ class num_model:
 
     # i = index of neuron weight that is increased, out_index = output neuron for that weight
     def oja(self, i, out_index, in_fr, out_fr, alpha = 0.0001):
-        # print(i)
         dw = alpha*(in_fr*out_fr-self.weights[out_index][i]*out_fr**2)
         self.weights[out_index][i] += dw
         for index in range(len(self.weights)):
@@ -315,7 +288,6 @@ class num_model:
                 print(self.weights[o_neuron][i_neuron], end=' ')
             print()
                
-     #inputs is tuple of (flattened image arr, label number as int)
     def train(self, X, y, a):
         '''
         Params:
@@ -325,7 +297,6 @@ class num_model:
         Return:
             none
         '''
-        #print('length of X: {}'.format(len(X)))
         # loop through all of the training data
         for t in range( len(X) ):
             # get which input neurons are firing
@@ -348,7 +319,6 @@ class num_model:
     def test(self, X_test, y_test):
         num_correct = 0
         for t in range( len(X_test) ):
-            #print("t: {}, Simulated: {}, Expected: {}".format(t, test.sim( X_test[t] ), y_test[t] ))
             if self.sim( X_test[t] ) == y_test[t]:
                 num_correct += 1
         return num_correct / len(X_test)
@@ -356,7 +326,6 @@ class num_model:
     def validate(self, X_val, y_val):
         num_correct = 0
         for t in range( len(X_val) ):
-            #print("t: {}, Simulated: {}, Expected: {}".format(t, test.sim( X_test[t] ), y_test[t] ))
             if self.sim( X_val[t] ) == y_val[t]:
                 num_correct += 1
         return num_correct / len(X_val)
@@ -369,7 +338,6 @@ class num_model:
                 #input neurons
                 curr_out = self.output_neurons[out_n]
                 for in_n in range(64):
-                    # in_fr = image_arr[in_n]
                     curr_weight = self.weights[out_n][in_n]
                     # input neuron is spiking
                     if fire_map[in_n] == 1:
@@ -384,7 +352,6 @@ class num_model:
         max_neuron = -1
         for i in range(len(self.output_neurons)):
             tc = self.output_neurons[i].total_current
-            #print(tc)
             if tc > max_tc:
                 max_tc = tc
                 max_neuron = i
